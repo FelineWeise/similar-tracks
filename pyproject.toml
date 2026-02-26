@@ -1,0 +1,22 @@
+[tool.poetry]
+name = "similar-tracks"
+version = "1.0.0"
+description = "Find songs similar to a given Spotify track with configurable similarity weights"
+authors = ["FelineWeise"]
+readme = "README.md"
+packages = [{include = "backend"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+fastapi = "^0.115.6"
+uvicorn = "^0.34.0"
+spotipy = "^2.24.0"
+pydantic = "^2.10.4"
+python-dotenv = "^1.0.1"
+
+[tool.poetry.scripts]
+start = "backend.main:app"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

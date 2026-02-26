@@ -20,21 +20,19 @@ A web app that finds songs similar to a given Spotify track. Tune configurable s
 ## Prerequisites
 
 - Python 3.10+
+- [Poetry](https://python-poetry.org/docs/#installation)
 - A **Spotify Developer** application (free) — create one at https://developer.spotify.com/dashboard
 
 ## Setup
 
 ```bash
 # Clone the repo
-git clone https://github.com/<you>/similar-tracks.git
+cd /Users/feline/Desktop/Repositories
+git clone https://github.com/FelineWeise/similar-tracks.git
 cd similar-tracks
 
-# Create a virtual environment
-python3 -m venv .venv
-source .venv/bin/activate
-
 # Install dependencies
-pip install -r requirements.txt
+poetry install
 
 # Configure credentials
 cp .env.example .env
@@ -44,7 +42,7 @@ cp .env.example .env
 ## Running
 
 ```bash
-python run.py
+poetry run python run.py
 ```
 
 Open http://localhost:8000 in your browser.
