@@ -14,8 +14,11 @@ class TrackInfo(BaseModel):
     preview_url: str | None = None
     spotify_url: str | None = None
     match_score: float | None = None
+    bpm: float | None = None
+    tags: list[str] = []
 
 
 class SimilarTracksResponse(BaseModel):
     seed_track: TrackInfo
     similar_tracks: list[TrackInfo]
+    seed_tags: list[str] = []

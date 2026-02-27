@@ -36,6 +36,27 @@
     </form>
 
     <div id="seed-track" class="seed-track hidden"></div>
+
+    <!-- Filter panel: shown after results load -->
+    <div id="filter-panel" class="filter-panel hidden">
+      <details open>
+        <summary>Filters</summary>
+
+        <div id="bpm-filter" class="bpm-filter hidden">
+          <label for="bpm-tolerance">BPM tolerance</label>
+          <div class="bpm-row">
+            <input type="range" id="bpm-tolerance" min="0" max="100" step="1" value="100" />
+            <span id="bpm-label">Any</span>
+          </div>
+        </div>
+
+        <div id="tag-filter" class="tag-filter hidden">
+          <label>Tags <span class="hint">(click to filter)</span></label>
+          <div id="tag-chips" class="tag-chips"></div>
+        </div>
+      </details>
+    </div>
+
     <div id="results" class="results"></div>
     <div id="error" class="error hidden"></div>
     <div id="loading" class="loading hidden">
