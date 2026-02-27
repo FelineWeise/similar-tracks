@@ -78,6 +78,9 @@
       allTracks = data.similar_tracks;
       seedTags = data.seed_tags || [];
 
+      console.log("[debug] seed_tags:", seedTags);
+      console.log("[debug] tracks with tags:", allTracks.filter(t => t.tags && t.tags.length > 0).length, "/", allTracks.length);
+
       renderSeed(seedTrack);
       buildFilters();
       renderFiltered();

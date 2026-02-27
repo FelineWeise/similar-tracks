@@ -8,8 +8,8 @@ from backend.config import LASTFM_API_KEY
 logger = logging.getLogger(__name__)
 
 LASTFM_BASE = "https://ws.audioscrobbler.com/2.0/"
-# Last.fm allows 5 req/s averaged over 5 min; semaphore limits concurrency
-_sem = asyncio.Semaphore(4)
+# Last.fm allows 5 req/s averaged over 5 min; keep concurrency low to avoid 429s
+_sem = asyncio.Semaphore(2)
 
 
 def _check_key():
@@ -122,7 +122,10 @@ async def fetch_track_tags(client: httpx.AsyncClient, artist: str, track: str) -
             resp = await client.get(LASTFM_BASE, params=params, timeout=10)
             resp.raise_for_status()
             data = resp.json()
-            return _parse_tags(data)
+            tags = _parse_tags(data)
+            # Small delay to stay under Last.fm 5 req/s rate limit
+            await asyncio.sleep(0.25)
+            return tags
         except Exception:
             logger.warning("Failed to fetch tags for '%s - %s'", artist, track, exc_info=True)
             return []
