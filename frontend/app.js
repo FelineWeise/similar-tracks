@@ -9,18 +9,6 @@
 
   let currentAudio = null;
 
-  // Keep slider value labels in sync
-  document.querySelectorAll('input[type="range"]').forEach((slider) => {
-    const label = document.querySelector(
-      `.slider-val[data-for="${slider.id}"]`
-    );
-    if (label) {
-      slider.addEventListener("input", () => {
-        label.textContent = parseFloat(slider.value).toFixed(2);
-      });
-    }
-  });
-
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     await search();
@@ -30,14 +18,6 @@
     const url = urlInput.value.trim();
     if (!url) return;
 
-    // Gather weights
-    const weights = {
-      bpm: parseFloat(document.getElementById("w-bpm").value),
-      vocals: parseFloat(document.getElementById("w-vocals").value),
-      instrumentals: parseFloat(document.getElementById("w-instrumentals").value),
-      style: parseFloat(document.getElementById("w-style").value),
-      mood: parseFloat(document.getElementById("w-mood").value),
-    };
     const limit = parseInt(document.getElementById("limit").value, 10);
 
     // UI state
@@ -52,7 +32,7 @@
       const resp = await fetch("/api/similar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url, weights, limit }),
+        body: JSON.stringify({ url, limit }),
       });
 
       if (!resp.ok) {
@@ -72,24 +52,21 @@
     }
   }
 
-  function featureBadges(af) {
-    if (!af) return "";
-    return `
-      <span class="feat-badge">${Math.round(af.bpm)} BPM</span>
-      <span class="feat-badge">Energy ${(af.energy * 100).toFixed(0)}%</span>
-      <span class="feat-badge">Dance ${(af.danceability * 100).toFixed(0)}%</span>
-      <span class="feat-badge">Mood ${(af.valence * 100).toFixed(0)}%</span>
-      <span class="feat-badge">Instr ${(af.instrumentalness * 100).toFixed(0)}%</span>
-    `;
+  function matchBadge(score) {
+    if (score == null) return "";
+    const pct = Math.round(score * 100);
+    return `<span class="match-badge">${pct}% match</span>`;
   }
 
   function renderSeed(track) {
+    const spotifyLink = track.spotify_url
+      ? `<a href="${track.spotify_url}" target="_blank" rel="noopener">${esc(track.name)}</a>`
+      : esc(track.name);
     seedEl.innerHTML = `
       ${track.album_art ? `<img src="${track.album_art}" alt="Album art" />` : ""}
       <div class="seed-meta">
-        <h2><a href="${track.spotify_url}" target="_blank" rel="noopener">${esc(track.name)}</a></h2>
+        <h2>${spotifyLink}</h2>
         <div class="artists">${esc(track.artists.join(", "))} &mdash; ${esc(track.album)}</div>
-        <div class="seed-features">${featureBadges(track.audio_features)}</div>
       </div>
     `;
     seedEl.classList.remove("hidden");
@@ -105,14 +82,17 @@
       const previewBtn = t.preview_url
         ? `<button class="play-btn" data-url="${t.preview_url}" title="Preview">&#9654;</button>`
         : "";
+      const nameLink = t.spotify_url
+        ? `<a href="${t.spotify_url}" target="_blank" rel="noopener">${esc(t.name)}</a>`
+        : esc(t.name);
       html += `
         <div class="track-card">
-          ${t.album_art ? `<img src="${t.album_art}" alt="" />` : ""}
+          ${t.album_art ? `<img src="${t.album_art}" alt="" />` : '<div class="img-placeholder"></div>'}
           <div class="track-info">
-            <div class="name"><a href="${t.spotify_url}" target="_blank" rel="noopener">${esc(t.name)}</a></div>
-            <div class="detail">${esc(t.artists.join(", "))} &mdash; ${esc(t.album)}</div>
+            <div class="name">${nameLink}</div>
+            <div class="detail">${esc(t.artists.join(", "))}${t.album ? " &mdash; " + esc(t.album) : ""}</div>
           </div>
-          <div class="track-features">${featureBadges(t.audio_features)}</div>
+          <div class="track-match">${matchBadge(t.match_score)}</div>
           ${previewBtn}
         </div>
       `;

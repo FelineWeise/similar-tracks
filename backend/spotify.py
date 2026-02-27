@@ -4,7 +4,7 @@ import spotipy
 from spotipy.oauth2 import SpotifyClientCredentials
 
 from backend.config import SPOTIFY_CLIENT_ID, SPOTIFY_CLIENT_SECRET
-from backend.models import AudioFeatures, SimilarityWeights, TrackInfo
+from backend.models import TrackInfo
 
 # Patterns for extracting Spotify track IDs
 TRACK_URL_PATTERN = re.compile(
@@ -47,20 +47,12 @@ def extract_track_id(url_or_uri: str) -> str:
     )
 
 
-def _build_audio_features(raw: dict) -> AudioFeatures:
-    return AudioFeatures(
-        bpm=raw["tempo"],
-        energy=raw["energy"],
-        danceability=raw["danceability"],
-        valence=raw["valence"],
-        instrumentalness=raw["instrumentalness"],
-        speechiness=raw["speechiness"],
-        acousticness=raw["acousticness"],
-        liveness=raw["liveness"],
-    )
+def get_track_info(url_or_uri: str) -> TrackInfo:
+    """Fetch basic track metadata from Spotify (no audio features needed)."""
+    sp = get_spotify_client()
+    track_id = extract_track_id(url_or_uri)
+    track = sp.track(track_id)
 
-
-def _build_track_info(track: dict, features: dict | None = None) -> TrackInfo:
     album_images = track.get("album", {}).get("images", [])
     return TrackInfo(
         name=track["name"],
@@ -69,67 +61,25 @@ def _build_track_info(track: dict, features: dict | None = None) -> TrackInfo:
         album_art=album_images[0]["url"] if album_images else None,
         preview_url=track.get("preview_url"),
         spotify_url=track["external_urls"]["spotify"],
-        audio_features=_build_audio_features(features) if features else None,
     )
 
 
-def get_track_with_features(
-    sp: spotipy.Spotify, track_id: str
-) -> tuple[dict, dict]:
-    """Fetch track metadata and its audio features."""
-    track = sp.track(track_id)
-    features = sp.audio_features([track_id])[0]
-    if features is None:
-        raise ValueError(f"Audio features unavailable for track: {track_id}")
-    return track, features
-
-
-def find_similar_tracks(
-    url_or_uri: str,
-    weights: SimilarityWeights,
-    limit: int = 10,
-) -> tuple[TrackInfo, list[TrackInfo]]:
-    """Find tracks similar to the given one, respecting user weight preferences."""
+def search_track(artist: str, track_name: str) -> TrackInfo | None:
+    """Search Spotify for a track by artist + name. Returns metadata or None."""
     sp = get_spotify_client()
-    track_id = extract_track_id(url_or_uri)
-    seed_track, seed_features = get_track_with_features(sp, track_id)
+    query = f"artist:{artist} track:{track_name}"
+    results = sp.search(q=query, type="track", limit=1)
+    items = results.get("tracks", {}).get("items", [])
+    if not items:
+        return None
 
-    # Build recommendation parameters based on weights.
-    # For each dimension the user cares about (weight > 0), we set a
-    # target value equal to the seed track's value so Spotify's
-    # recommendation engine tries to match it.
-    rec_kwargs: dict = {
-        "seed_tracks": [track_id],
-        "limit": limit,
-    }
-
-    if weights.bpm > 0:
-        rec_kwargs["target_tempo"] = seed_features["tempo"]
-    if weights.mood > 0:
-        rec_kwargs["target_valence"] = seed_features["valence"]
-    if weights.style > 0:
-        rec_kwargs["target_danceability"] = seed_features["danceability"]
-        rec_kwargs["target_energy"] = seed_features["energy"]
-    if weights.vocals > 0:
-        rec_kwargs["target_speechiness"] = seed_features["speechiness"]
-    if weights.instrumentals > 0:
-        rec_kwargs["target_instrumentalness"] = seed_features["instrumentalness"]
-
-    results = sp.recommendations(**rec_kwargs)
-    rec_track_ids = [t["id"] for t in results["tracks"]]
-
-    # Fetch audio features for all recommended tracks in one call
-    all_features = {}
-    if rec_track_ids:
-        features_list = sp.audio_features(rec_track_ids)
-        for f in features_list:
-            if f:
-                all_features[f["id"]] = f
-
-    seed_info = _build_track_info(seed_track, seed_features)
-    similar = [
-        _build_track_info(t, all_features.get(t["id"]))
-        for t in results["tracks"]
-    ]
-
-    return seed_info, similar
+    t = items[0]
+    album_images = t.get("album", {}).get("images", [])
+    return TrackInfo(
+        name=t["name"],
+        artists=[a["name"] for a in t["artists"]],
+        album=t["album"]["name"],
+        album_art=album_images[0]["url"] if album_images else None,
+        preview_url=t.get("preview_url"),
+        spotify_url=t["external_urls"]["spotify"],
+    )

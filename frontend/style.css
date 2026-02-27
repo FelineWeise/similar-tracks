@@ -90,53 +90,6 @@ header h1 {
   cursor: not-allowed;
 }
 
-/* ---- Weights ---- */
-.weights-panel {
-  margin-top: 1rem;
-  background: var(--surface);
-  border-radius: var(--radius);
-  padding: 1rem 1.25rem;
-}
-
-.weights-panel summary {
-  cursor: pointer;
-  font-weight: 600;
-  color: var(--text-secondary);
-  user-select: none;
-}
-
-.sliders {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem 2rem;
-  margin-top: 1rem;
-}
-
-.slider-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.slider-group label {
-  min-width: 140px;
-  font-size: 0.9rem;
-  color: var(--text-secondary);
-}
-
-.slider-group input[type="range"] {
-  flex: 1;
-  accent-color: var(--accent);
-}
-
-.slider-val {
-  min-width: 2.5rem;
-  text-align: right;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-}
-
 .limit-row {
   margin-top: 1rem;
   display: flex;
@@ -181,24 +134,19 @@ header h1 {
   font-size: 1.1rem;
 }
 
+.seed-meta h2 a {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.seed-meta h2 a:hover {
+  text-decoration: underline;
+  color: var(--accent);
+}
+
 .seed-meta .artists {
   color: var(--text-secondary);
   font-size: 0.9rem;
-}
-
-.seed-features {
-  margin-top: 0.4rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-}
-
-.feat-badge {
-  font-size: 0.75rem;
-  background: var(--surface2);
-  padding: 0.2rem 0.55rem;
-  border-radius: 20px;
-  color: var(--text-secondary);
 }
 
 /* ---- Results ---- */
@@ -236,6 +184,13 @@ header h1 {
   object-fit: cover;
 }
 
+.img-placeholder {
+  width: 56px;
+  height: 56px;
+  border-radius: 4px;
+  background: var(--surface2);
+}
+
 .track-info {
   flex: 1;
   min-width: 0;
@@ -266,11 +221,19 @@ header h1 {
   text-overflow: ellipsis;
 }
 
-.track-features {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
-  justify-content: flex-end;
+/* ---- Match score badge ---- */
+.track-match {
+  flex-shrink: 0;
+}
+
+.match-badge {
+  font-size: 0.75rem;
+  background: var(--surface2);
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  color: var(--accent);
+  font-weight: 600;
+  white-space: nowrap;
 }
 
 /* ---- Audio preview ---- */
@@ -330,11 +293,7 @@ header h1 {
 
 /* ---- Responsive ---- */
 @media (max-width: 640px) {
-  .sliders {
-    grid-template-columns: 1fr;
-  }
-
-  .track-features {
+  .track-match {
     display: none;
   }
 

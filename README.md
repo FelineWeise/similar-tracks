@@ -1,20 +1,13 @@
 # Similar Tracks Finder
 
-A web app that finds songs similar to a given Spotify track. Tune configurable similarity weights to focus the search on specific audio traits like BPM, vocals, instrumentals, style, and mood.
+A web app that finds songs similar to a given Spotify track using Last.fm's collaborative filtering — powered by 20+ years of real listener data.
 
 ## Features
 
 - **Spotify URL input** – paste any Spotify track link
-- **Similarity weights** – adjust sliders to control what matters most:
-  | Weight | Spotify feature(s) used |
-  |---|---|
-  | BPM / Tempo | `tempo` |
-  | Vocals | `speechiness` |
-  | Instrumentals | `instrumentalness` |
-  | Style | `danceability` + `energy` |
-  | Mood | `valence` |
-- **Audio feature badges** on every result (BPM, energy, danceability, mood, instrumentalness)
-- **30-second preview playback** (when Spotify provides a preview URL)
+- **Last.fm similarity** – finds tracks that listeners of the seed track also enjoy, with match scores
+- **30-second preview playback** via Deezer (fallback when Spotify previews are unavailable)
+- **Spotify cross-referencing** – results link back to Spotify with album art
 - Configurable result count (5 / 10 / 20 / 50)
 
 ## Prerequisites
@@ -22,6 +15,7 @@ A web app that finds songs similar to a given Spotify track. Tune configurable s
 - Python 3.10+
 - [Poetry](https://python-poetry.org/docs/#installation)
 - A **Spotify Developer** application (free) — create one at https://developer.spotify.com/dashboard
+- A **Last.fm API key** (free) — create one at https://www.last.fm/api/account/create
 
 ## Setup
 
@@ -36,7 +30,7 @@ poetry install
 
 # Configure credentials
 cp .env.example .env
-# Edit .env and add your Spotify Client ID and Secret
+# Edit .env and add your Spotify Client ID/Secret and Last.fm API Key
 ```
 
 ## Running
@@ -56,24 +50,24 @@ Open http://localhost:8000 in your browser.
 ```json
 {
   "url": "https://open.spotify.com/track/4cOdK2wGLETKBW3PvgPWqT",
-  "weights": {
-    "bpm": 0.8,
-    "vocals": 0.3,
-    "instrumentals": 0.5,
-    "style": 0.7,
-    "mood": 0.6
-  },
   "limit": 10
 }
 ```
 
-**Response:** JSON with `seed_track` and `similar_tracks`, each containing name, artists, album, album art, Spotify URL, and audio features.
+**Response:** JSON with `seed_track` and `similar_tracks`, each containing name, artists, album, album art, Spotify URL, match score, and preview URL.
+
+## How It Works
+
+1. **Spotify** resolves the pasted URL to track metadata (name, artist, album art)
+2. **Last.fm** `track.getSimilar` returns similar tracks based on collaborative listening patterns
+3. Each result is cross-referenced on **Spotify** for album art and links
+4. **Deezer** provides 30-second audio previews as a fallback
 
 ## Tech Stack
 
-- **Backend:** Python, FastAPI, Spotipy
+- **Backend:** Python, FastAPI, Spotipy, httpx
 - **Frontend:** Vanilla HTML / CSS / JS
-- **API:** Spotify Web API (Recommendations + Audio Features)
+- **APIs:** Spotify Web API (track lookup), Last.fm (similarity), Deezer (audio previews)
 
 ## License
 
