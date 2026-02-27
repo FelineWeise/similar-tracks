@@ -1,7 +1,10 @@
 import asyncio
+import logging
 
 import httpx
 from fastapi import FastAPI, HTTPException
+
+logging.basicConfig(level=logging.INFO)
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
@@ -107,6 +110,26 @@ async def api_similar(req: TrackRequest):
 @app.get("/api/health")
 def health():
     return {"status": "ok"}
+
+
+@app.get("/api/debug/tags")
+def debug_tags(artist: str, track: str):
+    """Diagnostic endpoint: test Last.fm tag fetching for a single track."""
+    import httpx as _httpx
+    from backend.config import LASTFM_API_KEY as _key
+
+    params = {
+        "method": "track.gettoptags",
+        "artist": artist,
+        "track": track,
+        "api_key": _key,
+        "format": "json",
+        "autocorrect": 1,
+    }
+    resp = _httpx.get("https://ws.audioscrobbler.com/2.0/", params=params, timeout=10)
+    raw = resp.json()
+    parsed = get_track_tags(artist, track)
+    return {"raw_response": raw, "parsed_tags": parsed}
 
 
 app.mount("/", StaticFiles(directory="frontend", html=True), name="frontend")

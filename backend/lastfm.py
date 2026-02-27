@@ -1,8 +1,11 @@
 import asyncio
+import logging
 
 import httpx
 
 from backend.config import LASTFM_API_KEY
+
+logger = logging.getLogger(__name__)
 
 LASTFM_BASE = "https://ws.audioscrobbler.com/2.0/"
 # Last.fm allows 5 req/s averaged over 5 min; semaphore limits concurrency
@@ -17,6 +20,27 @@ def _check_key():
         )
 
 
+def _parse_tags(data: dict, limit: int = 15) -> list[str]:
+    """Extract tag names from a Last.fm toptags response."""
+    if "error" in data:
+        logger.warning("Last.fm tag error: %s", data.get("message", "unknown"))
+        return []
+
+    toptags = data.get("toptags", {})
+    raw = toptags.get("tag", [])
+
+    # Last.fm sometimes returns a single dict instead of a list
+    if isinstance(raw, dict):
+        raw = [raw]
+
+    tags = []
+    for t in raw[:limit]:
+        name = t.get("name", "").strip().lower()
+        if name:
+            tags.append(name)
+    return tags
+
+
 def get_similar_tracks(artist: str, track: str, limit: int = 50) -> list[dict]:
     """Call Last.fm track.getSimilar (sync). Returns list of dicts with
     keys: name, artist, match, image, url."""
@@ -28,6 +52,7 @@ def get_similar_tracks(artist: str, track: str, limit: int = 50) -> list[dict]:
         "api_key": LASTFM_API_KEY,
         "format": "json",
         "limit": limit,
+        "autocorrect": 1,
     }
     resp = httpx.get(LASTFM_BASE, params=params, timeout=15)
     resp.raise_for_status()
@@ -68,14 +93,17 @@ def get_track_tags(artist: str, track: str, limit: int = 20) -> list[str]:
         "track": track,
         "api_key": LASTFM_API_KEY,
         "format": "json",
+        "autocorrect": 1,
     }
     try:
         resp = httpx.get(LASTFM_BASE, params=params, timeout=10)
         resp.raise_for_status()
         data = resp.json()
-        tags = data.get("toptags", {}).get("tag", [])
-        return [t["name"].lower() for t in tags[:limit] if int(t.get("count", 0)) > 0]
+        tags = _parse_tags(data, limit)
+        logger.info("Seed tags for '%s - %s': %s", artist, track, tags[:5])
+        return tags
     except Exception:
+        logger.exception("Failed to fetch seed tags for '%s - %s'", artist, track)
         return []
 
 
@@ -88,12 +116,13 @@ async def fetch_track_tags(client: httpx.AsyncClient, artist: str, track: str) -
             "track": track,
             "api_key": LASTFM_API_KEY,
             "format": "json",
+            "autocorrect": 1,
         }
         try:
             resp = await client.get(LASTFM_BASE, params=params, timeout=10)
             resp.raise_for_status()
             data = resp.json()
-            tags = data.get("toptags", {}).get("tag", [])
-            return [t["name"].lower() for t in tags[:15] if int(t.get("count", 0)) > 0]
+            return _parse_tags(data)
         except Exception:
+            logger.warning("Failed to fetch tags for '%s - %s'", artist, track, exc_info=True)
             return []
